@@ -12,10 +12,11 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--vcf", default=None, help="the input file in VCF format.")
 parser.add_argument("--markers", default=None, help="file (csv, xlsx, or ods) containing marker information from microhaplotypes to be extracted. \
     File should contain microhaplotype name, GRCh37/38 position, chromosome number, and rsID or marker name.")
+parser.add_argument("--sep", default=';', help="the separator of snps and pos in the marker file.")
 parser.add_argument("--col_markers", nargs="+", default=None, help="The name of columns to be used (e.g. MH,Chrom,Pos,ID). \
     Required columns are indicated above.")
 # Requires Python > v3.9
-parser.add_argument("--separate", action = argparse.BooleanOptionalAction, default = False, help="group output by microhaplotype.")
+parser.add_argument("--splitmh", action = argparse.BooleanOptionalAction, default = False, help="group output by microhaplotype.")
 parser.add_argument("--outfile", default="merged_data", help="the prefix of the filename of the merged dataset (will be in VCF format).")
 parser.add_argument("--dir", default=None, help="the directory where all the files will be downloaded")
 parser.add_argument("--clean", action = argparse.BooleanOptionalAction, default = True, help="remove intermediate files.")
@@ -77,8 +78,8 @@ if marker_ext == ".csv":
 for idx, conts in marker_meta.iterrows():
    chrom = str(conts[1])[3:]
    pos_list = {}
-   pos = str(conts[2]).split(";")
-   ids = str(conts[3]).split(";")
+   pos = str(conts[2]).split(args.sep)
+   ids = str(conts[3]).split(args.sep)
    if len(pos) != len(ids):
       raise ValueError("Length of POS and rsID for the microhaplotype is not equal.")
    else:
@@ -137,13 +138,13 @@ subprocess.run([BASH_MERGE, MERGE_FILES, merged_file])
 print("ADDING RSID TO MARKERS")
 subprocess.run([BASH_UPDATE, merged_file, RENAME_RSID, final_file])
 
-if args.separate:
+if args.splitmh:
     file = final_file + ".vcf"
     snps_list = {}
     for idx, conts in marker_meta.iterrows():
         chrom = str(conts[1])[3:]
         pos_list = {}
-        ids = str(conts[3]).split(";")
+        ids = str(conts[3]).split(args.sep)
         # pair pos and ids first
         pos_list[conts[0]] = ids
         if chrom not in snps_list.keys():
